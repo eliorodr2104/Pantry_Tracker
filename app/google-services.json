@@ -1,0 +1,48 @@
+{
+  "project_info": {
+    "project_number": "866834411914",
+    "firebase_url": "https://pantry-tracker-b597b-default-rtdb.europe-west1.firebasedatabase.app",
+    "project_id": "pantry-tracker-b597b",
+    "storage_bucket": "pantry-tracker-b597b.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:866834411914:android:a88d2083cf54ae2af15873",
+        "android_client_info": {
+          "package_name": "com.project.pantrytracker"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "866834411914-lcqjpnacsfh9252f45hkm79r2hfnld8f.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.project.pantrytracker",
+            "certificate_hash": "1d89953cae7b9f71ccaf5a999bcf38b727a473c0"
+          }
+        },
+        {
+          "client_id": "866834411914-tohivio2o1rp9v9mnrpeeh1a9koqsc0a.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyA882gUVNlzQo3OGbaWk-D026geVQvuLJ8"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "866834411914-tohivio2o1rp9v9mnrpeeh1a9koqsc0a.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
