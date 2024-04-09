@@ -7,4 +7,6 @@ data class Product(
     val brands: List<String>,
     val category: String = "",
     val availability: Boolean
-)
+) {
+    constructor() : this("", "", "", listOf(), "", false)
+}

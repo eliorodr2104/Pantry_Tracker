@@ -196,32 +196,23 @@ private fun InitialScanScreen(
             )
         }
 
-        //Box che contiene il pulsante per andare avanti
-        //TODO Posso togliere la "Box" e lasciare soltanto
-        // il button con un modifier per il padding
-        Box(
+        //Button che va alla schermata successiva
+        Button(
+            onClick = { navController.navigate("scan_screen") }, //Funzione eseguita all'esecuzione, cambia la schermata
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(
                     start = 70.dp,
                     end = 70.dp
-                ),
-            contentAlignment = Alignment.Center
-        ) {
-            //Button che va alla schermata successiva
-            Button(
-                onClick = { navController.navigate("scan_screen") }, //Funzione eseguita all'esecuzione, cambia la schermata
-                modifier = Modifier
-                    .fillMaxWidth()
-            ) {
-                //Text con il testo del pulsante.
-                Text(
-                    text = "Scan",
-                    style = MaterialTheme.typography.titleMedium,
-                    modifier = Modifier
-                        .padding(5.dp)
                 )
-            }
+        ) {
+            //Text con il testo del pulsante.
+            Text(
+                text = "Scan",
+                style = MaterialTheme.typography.titleMedium,
+                modifier = Modifier
+                    .padding(5.dp)
+            )
         }
     }
 }
@@ -266,21 +257,22 @@ fun ScanScreen(
         ) {
             //Column per ordinare in maniera verticale centrata il testo e la view della camera.
             //TODO Da togliere un po' lo space, perché la visuale della telecamera è troppo piccola.
+            // (FORSE HO RISOLTO! CAZZO SI!!)
             Column(
                 modifier = Modifier
                     .fillMaxSize()
                     .padding(25.dp),
                 horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.spacedBy(50.dp)
+                verticalArrangement = Arrangement.spacedBy(35.dp)
             ) {
-                //Text che ha come testo ciò che si dovrebbe fare nella schermata
+                //Text che ha come testo ha ciò che si dovrebbe fare nella schermata
                 Text(
                     text = "Scan the product",
                     fontWeight = FontWeight.Bold,
                     style = MaterialTheme.typography.titleLarge
                 )
 
-                //Box contenent la visuale della telecamera
+                //Box contenente la visuale della telecamera
                 Box(
                     modifier = Modifier
                         .fillMaxSize()
@@ -634,6 +626,15 @@ private fun CategoryItem(
     }
 }
 
+/**
+ * Metodo che definisce un composable per la creazione di un TextField custom.
+ * @author Eliomar Alejandro Rodriguez Ferrer.
+ *
+ * @param value String che contiene il valore della stringa.
+ * @param onValueChange Funzione per modificare il valore della stringa.
+ * @param titleTextField Stringa che contiene il titolo del textfield.
+ * @param labelTextField Funzione composable per il label interno del textfield.
+ */
 @Composable
 private fun CustomTextField(
     value: String,
@@ -641,9 +642,11 @@ private fun CustomTextField(
     titleTextField: String,
     labelTextField: @Composable () -> Unit
 ){
+    //Column che contiene il titolo e la textfield allineate a sinistra.
     Column(
         verticalArrangement = Arrangement.spacedBy(5.dp)
     ) {
+        //Text che contiene il titolo della textfield
         Text(
             text = titleTextField,
             fontWeight = FontWeight.Bold,
@@ -653,6 +656,7 @@ private fun CustomTextField(
                 )
         )
 
+        //TextField con i parametri settati.
         TextField(
             value = value,
             onValueChange = onValueChange,
@@ -669,74 +673,119 @@ private fun CustomTextField(
     }
 }
 
+/**
+ * Metodo che definisce un composable per la telecamera che scannerizza i barcode.
+ * @author Eliomar Alejandro Rodriguez Ferrer.
+ *
+ * @param changeProduct Funzione per modificare il prodotto preso dall'api.
+ * @param navController Oggetto per la navigazione tra i composable.
+ */
 @Composable
 private fun CameraBarcodeScan(
     changeProduct: (Product?) -> Unit,
     navController: NavController
 ) {
+    //Variabile che ha il contesto della schermata in processo.
     val context = LocalContext.current
+
+    //Variabile che ha il ciclo di vita della schermata corrente
     val lifecycleOwner = LocalLifecycleOwner.current
 
+    //Variabile di stato mutabile che contiene il Preview della telecamera.
     var preview by remember { mutableStateOf<androidx.camera.core.Preview?>(null) }
+
+    //Variabile di stato mutabile che contiene il barcode scannerizzato.
     var barCodeVal by remember { mutableStateOf("") }
 
+    //Variabile di stato mutabile che contiene un valore booleano per
+    // fermare il processo della telecamera.
     var cameraPaused by remember { mutableStateOf(false) }
 
 
     LaunchedEffect(
-        key1 = barCodeVal != ""
+        key1 = barCodeVal != "" // Lancia l'effetto quando il valore del codice a barre non è vuoto.
     ) {
 
+        //Verifica se il codice a barre non è vuoto.
         if (barCodeVal != "") {
+            //Cerca il prodotto utilizzando il codice a barre.
             val product = BarcodeApi().searchBarcode(barCodeVal)
 
+            //Mostra un messaggio Toast con il nome del prodotto (commentato)
             //Toast.makeText(context, product?.name ?: "niente", Toast.LENGTH_SHORT).show()
 
+            //Cambia il prodotto corrente con quello restituito dalla
+            //ricerca del codice a barre con l'api.
             changeProduct(product)
+
+            //Naviga verso il composable "modifier_product".
             navController.navigate("modifier_product")
 
+            //Resettare il valore del codice a barre a una stringa vuota.
             barCodeVal = ""
         }
     }
 
+    //AndroidView rappresenta un'anteprima della fotocamera per la scansione di codici a barre.
+    //TODO (BUG) Devo sistemare che all'avvio della fotocamera essa si spegne per un secondo
+    // senza motivo apparente. (che cazzo ha!!!!)
     AndroidView(
+        //Factory per creare l'AndroidView
         factory = { AndroidViewContext ->
+            //Creazione di un PreviewView con determinate le sue determinate proprietà.
             PreviewView(AndroidViewContext).apply {
+                //Impostazione del tipo di scala per riempire il centro.
                 this.scaleType = PreviewView.ScaleType.FILL_CENTER
+
+                //Impostazione dei parametri per corrispondere al genitore.
                 layoutParams = ViewGroup.LayoutParams(
                     ViewGroup.LayoutParams.MATCH_PARENT,
                     ViewGroup.LayoutParams.MATCH_PARENT,
                 )
+
+                //Impostazione della modalità di implementazione
                 implementationMode = PreviewView.ImplementationMode.COMPATIBLE
             }
         },
         modifier = Modifier
             .fillMaxSize(),
+        //Funzione di aggiornamento per configurare l'anteprima della fotocamera e la scansione del codice a barre.
         update = { previewView ->
+            //Creazione di un selettore della fotocamera per scegliere la fotocamera posteriore.
             val cameraSelector: CameraSelector = CameraSelector.Builder()
                 .requireLensFacing(CameraSelector.LENS_FACING_BACK)
                 .build()
 
+            //Creazione di un servizio executor per le operazioni della fotocamera.
             val cameraExecutor: ExecutorService = Executors.newSingleThreadExecutor()
+
+            //Ottenimento di un oggetto future per il provider della fotocamera.
             val cameraProviderFuture: ListenableFuture<ProcessCameraProvider> = ProcessCameraProvider.getInstance(context)
 
+            //Aggiunta di un ascoltatore
             cameraProviderFuture.addListener({
+                //Inizializzazione di un'anteprima per visualizzare la fotocamera.
                 preview = androidx.camera.core.Preview.Builder().build().also {
                     it.setSurfaceProvider(previewView.surfaceProvider)
                 }
 
+                //Prende il provider della fotocamera dall'oggetto future.
                 val cameraProvider: ProcessCameraProvider = cameraProviderFuture.get()
 
+                //Crea un analizzatore di codici a barre.
                 val barcodeAnalyser = BarCodeAnalyser { barcodes ->
                     barcodes.forEach { barcode ->
                         barcode.rawValue?.let { barcodeValue ->
                             barCodeVal = barcodeValue
+
+                            //Stoppa la telecamera e il rilevamento dei codici a barre
                             cameraProvider.unbindAll()
                             cameraPaused = true
                         }
                     }
                 }
 
+                //Crea un caso d'uso di analisi delle immagini per la scansione dei codici a barre.
                 val imageAnalysis: ImageAnalysis = ImageAnalysis.Builder()
                     .setBackpressureStrategy(ImageAnalysis.STRATEGY_KEEP_ONLY_LATEST)
                     .build()
@@ -747,7 +796,11 @@ private fun CameraBarcodeScan(
                     }
 
                 try {
+                    //Scollega la telecamera prima di ricollegarla.
                     cameraProvider.unbindAll()
+
+                    //Controlla se la telecamera non dev'essere stoppata, s'è
+                    // non è così la raiccende.
                     if (!cameraPaused) {
                         cameraProvider.bindToLifecycle(
                             lifecycleOwner,
@@ -757,6 +810,7 @@ private fun CameraBarcodeScan(
                         )
                     }
 
+                    //Se la destinazione cambia da quella corrente, scollega la telecamera.
                     navController.addOnDestinationChangedListener { _, destination, _ ->
                         if (destination.id != destination.id) {
                             cameraProvider.unbindAll()

@@ -33,6 +33,7 @@ import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
 import com.project.pantrytracker.DataItems.BottomBarItemData
 import com.project.pantrytracker.Firebase.LoginGoogle.UserData
+import com.project.pantrytracker.Firebase.ProductsViewModel
 import com.project.pantrytracker.enumsData.Screens.ADD_PRODUCT
 import com.project.pantrytracker.enumsData.Screens.HOME
 import com.project.pantrytracker.enumsData.Screens.LIST_PRODUCTS
@@ -139,6 +140,8 @@ fun MenuScreen(
             }
         }
     ) { paddingValues ->
+        // Nell'Activity o componente superiore
+
         when(screenOption) {
             HOME -> HomeScreen(
                 paddingValues = paddingValues
@@ -148,7 +151,11 @@ fun MenuScreen(
                 paddingValues = paddingValues,
                 changeMenu = { screenOption = HOME }
             )
-            LIST_PRODUCTS -> TODO()
+            LIST_PRODUCTS -> ListScreen(
+                //viewModel = viewModel,
+                userData = userData,
+                paddingValues = paddingValues
+            )
         }
     }
 }
