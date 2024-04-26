@@ -14,14 +14,9 @@ import androidx.camera.core.ImageAnalysis
 import androidx.camera.core.Preview
 import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.camera.view.PreviewView
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.height
-import androidx.compose.material3.Button
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -29,11 +24,9 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalLifecycleOwner
-import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.lifecycleScope
@@ -42,20 +35,15 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.google.accompanist.permissions.ExperimentalPermissionsApi
-import com.google.accompanist.permissions.rememberPermissionState
 import com.google.android.gms.auth.api.identity.Identity
 import com.google.common.util.concurrent.ListenableFuture
 import com.project.pantrytracker.BarcodeScanner.BarCodeAnalyser
 import com.project.pantrytracker.Firebase.LoginGoogle.GoogleAuthUiClient
 import com.project.pantrytracker.Firebase.LoginGoogle.SignInViewModel
 import com.project.pantrytracker.Firebase.LoginGoogle.UserData
-import com.project.pantrytracker.Firebase.addProductDb
-import com.project.pantrytracker.Firebase.createUserDb
 import com.project.pantrytracker.barcodeApi.BarcodeApi
 import com.project.pantrytracker.ui.MenuScreen
-import com.project.pantrytracker.ui.ScanScreen
 import com.project.pantrytracker.ui.SignInScreen
-import com.project.pantrytracker.ui.UseScanScreen
 import com.project.pantrytracker.ui.theme.PantryTrackerTheme
 import kotlinx.coroutines.launch
 import java.util.concurrent.ExecutorService
@@ -117,7 +105,7 @@ class MainActivity : ComponentActivity() {
                                     ).show()
 
                                     //test
-                                    createUserDb(googleAuthUiClient.getSignedInUser())
+                                    //createUserDb(googleAuthUiClient.getSignedInUser())
 
                                     navController.navigate("profile")
                                     viewModel.resetState()

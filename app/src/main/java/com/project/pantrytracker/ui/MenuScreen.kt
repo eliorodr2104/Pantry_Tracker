@@ -1,5 +1,9 @@
 package com.project.pantrytracker.ui
 
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -7,6 +11,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.AddShoppingCart
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.List
 import androidx.compose.material.icons.filled.PhotoCamera
@@ -32,8 +37,10 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
 import com.project.pantrytracker.DataItems.BottomBarItemData
+import com.project.pantrytracker.DataItems.Product
 import com.project.pantrytracker.Firebase.LoginGoogle.UserData
 import com.project.pantrytracker.Firebase.ProductsViewModel
+import com.project.pantrytracker.Firebase.addProductDb
 import com.project.pantrytracker.enumsData.Screens.ADD_PRODUCT
 import com.project.pantrytracker.enumsData.Screens.HOME
 import com.project.pantrytracker.enumsData.Screens.LIST_PRODUCTS
@@ -70,24 +77,18 @@ fun MenuScreen(
         topBar = {
             TopAppBar(
                 title = {
-                    Box(
-                        modifier = Modifier.fillMaxSize(),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Text(
-                            text = when(screenOption) {
-                                HOME -> "Pantry manager"
-                                LIST_PRODUCTS -> "Inventory"
-                                ADD_PRODUCT -> "Add product"
-                            },
-                            fontWeight = FontWeight.Bold
-                        )
-                    }
+                    Text(
+                        text = when(screenOption) {
+                            HOME -> "Pantry manager"
+                            LIST_PRODUCTS -> "Inventory"
+                            ADD_PRODUCT -> "Add product"
+                        },
+                        fontWeight = FontWeight.Bold
+                    )
                 },
 
                 navigationIcon = {
-                    IconButton(onClick = { /*TODO*/ }, enabled = false) {
-                    }
+
                 },
 
                 actions = {
@@ -108,50 +109,114 @@ fun MenuScreen(
 
         floatingActionButton = {
              if (screenOption != ADD_PRODUCT) {
-                 ExtendedFloatingActionButton(
-                     onClick = { screenOption = ADD_PRODUCT }
-                 ) {
-                     Icon(
-                         imageVector = Icons.Filled.PhotoCamera,
-                         contentDescription = "Scan product"
-                     )
 
-                     Spacer(modifier = Modifier.width(5.dp))
+                 if (screenOption == LIST_PRODUCTS) {
+                     ExtendedFloatingActionButton(
+                         onClick = {
+                             addProductDb(
+                                 product = Product("test", "test", "test", emptyList(), "", 1),
+                                 user = userData
+                             )
+                         }
+                     ) {
+                         Icon(
+                             imageVector = Icons.Filled.AddShoppingCart,
+                             contentDescription = "Add test"
+                         )
 
-                     Text(
-                         text = "Scan"
-                     )
+                         Spacer(modifier = Modifier.width(5.dp))
+
+                         Text(
+                             text = "Add Test"
+                         )
+                     }
+
+                 } else {
+                     ExtendedFloatingActionButton(
+                         onClick = { screenOption = ADD_PRODUCT }
+                     ) {
+                         Icon(
+                             imageVector = Icons.Filled.PhotoCamera,
+                             contentDescription = "Scan product"
+                         )
+
+                         Spacer(modifier = Modifier.width(5.dp))
+
+                         Text(
+                             text = "Scan"
+                         )
+                     }
                  }
+
+
              }
         },
 
         bottomBar = {
-            BottomAppBar {
-                itemsBottomBar.forEach { item ->
-                    NavigationBarItem(
-                        selected = item.selected,
-                        onClick = item.onClick,
-                        icon = item.icon,
-                        enabled = item.enable,
-                        label = item.label,
-                        alwaysShowLabel = item.alwaysShowLabel
-                    )
+            if (screenOption != ADD_PRODUCT) {
+                BottomAppBar {
+                    itemsBottomBar.forEach { item ->
+                        NavigationBarItem(
+                            selected = item.selected,
+                            onClick = item.onClick,
+                            icon = item.icon,
+                            enabled = item.enable,
+                            label = item.label,
+                            alwaysShowLabel = item.alwaysShowLabel
+                        )
+                    }
                 }
             }
         }
     ) { paddingValues ->
         // Nell'Activity o componente superiore
 
-        when(screenOption) {
-            HOME -> HomeScreen(
+        AnimatedVisibility(
+            visible = screenOption == HOME,
+            enter = fadeIn(
+                // Overwrites the initial value of alpha to 0.4f for fade in, 0 by default
+                initialAlpha = 0.4f
+            ),
+            exit = fadeOut(
+                // Overwrites the default animation with tween
+                animationSpec = tween(durationMillis = 250)
+            )
+        ) {
+            HomeScreen(
                 paddingValues = paddingValues
             )
-            ADD_PRODUCT -> UseScanScreen(
+        }
+
+        AnimatedVisibility(
+            visible = screenOption == ADD_PRODUCT,
+            enter = fadeIn(
+                // Overwrites the initial value of alpha to 0.4f for fade in, 0 by default
+                initialAlpha = 0.4f
+            ),
+            exit = fadeOut(
+                // Overwrites the default animation with tween
+                animationSpec = tween(durationMillis = 250)
+            )
+        ) {
+            UseScanScreen(
                 userData = userData,
                 paddingValues = paddingValues,
                 changeMenu = { screenOption = HOME }
             )
-            LIST_PRODUCTS -> ListScreen(
+        }
+
+        AnimatedVisibility(
+            visible = screenOption == LIST_PRODUCTS,
+            enter = fadeIn(
+                // Overwrites the initial value of alpha to 0.4f for fade in, 0 by default
+                initialAlpha = 0.4f
+            ),
+            exit = fadeOut(
+                // Overwrites the default animation with tween
+                animationSpec = tween(durationMillis = 250)
+            )
+        ) {
+            ListScreen(
                 //viewModel = viewModel,
                 userData = userData,
                 paddingValues = paddingValues

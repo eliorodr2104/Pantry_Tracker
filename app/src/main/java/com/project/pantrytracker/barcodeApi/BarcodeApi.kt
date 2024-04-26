@@ -17,27 +17,38 @@ class BarcodeApi {
     private val client = HttpClient(CIO)
     private val URL_API = "https://world.openfoodfacts.org/api/v2/product/"
 
-    suspend fun searchBarcode(barcode: String): Product? {
+    suspend fun searchBarcode(barcode: String): Product {
         return try {
             val response: HttpResponse = client.request("$URL_API$barcode.json") {
                 method = HttpMethod.Get
             }
 
-            response.validateResponse()?.let { responseBody ->
-                convertJsonIntoObject(responseBody)
-            }
+            convertJsonIntoObject(
+                json = response.validateResponse(),
+                barcode = barcode
+            )
 
         } catch (exception: Exception) {
-            null
+            Product(
+                barcode = barcode,
+                name = "",
+                quantity = "",
+                brands = emptyList(),
+                category = "",
+                numberOfProducts = 1
+            )
         }
     }
 
     @OptIn(ExperimentalStdlibApi::class)
-    private fun convertJsonIntoObject(json: String): Product? {
+    private fun convertJsonIntoObject(
+        json: String?,
+        barcode: String
+    ): Product {
         return try {
             val moshi = Moshi.Builder().build()
 
-            val jsonData = moshi.adapter<Map<String, Any>>().fromJson(json)
+            val jsonData = json?.let { moshi.adapter<Map<String, Any>>().fromJson(it) }
 
             val barcodeProduct = jsonData?.get("code")
 
@@ -53,10 +64,17 @@ class BarcodeApi {
                 name = nameProduct.toString(),
                 quantity = quantityProduct.toString(),
                 brands = brandsProduct,
-                availability = true
+                numberOfProducts = 1
             )
         } catch (exception: JsonDataException) {
-            null
+            Product(
+                barcode = barcode,
+                name = "",
+                quantity = "",
+                brands = emptyList(),
+                category = "",
+                numberOfProducts = 1
+            )
         }
     }
 

@@ -1,19 +1,18 @@
 package com.project.pantrytracker.Firebase
 
-import androidx.compose.runtime.mutableStateOf
 import androidx.lifecycle.ViewModel
 import com.google.firebase.database.ChildEventListener
 import com.google.firebase.database.DataSnapshot
 import com.google.firebase.database.DatabaseError
-import com.google.firebase.database.DatabaseException
+import com.google.firebase.database.DatabaseReference
 import com.google.firebase.database.FirebaseDatabase
 import com.google.firebase.database.ValueEventListener
 import com.project.pantrytracker.DataItems.Product
 import com.project.pantrytracker.Firebase.LoginGoogle.UserData
-import com.project.pantrytracker.ui.ListScreen
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 
+/*
 fun createUserDb(user: UserData?) {
     val database = FirebaseDatabase.getInstance()
 
@@ -28,20 +27,78 @@ fun createUserDb(user: UserData?) {
         productsRef.setValue(defaultProduct)
     }
 }
+ */
 
 fun addProductDb(
     product: Product,
     user: UserData?
 ) {
-    val database = FirebaseDatabase.getInstance()
+    var productAvailable = false
+    val database: DatabaseReference
+    var productId: String
 
-    if (user?.userId != null) {
+    if (user != null) {
+        database = FirebaseDatabase.getInstance().reference.child("users/${user.userId}/products")
+
+        database.addListenerForSingleValueEvent(object : ValueEventListener {
+            override fun onDataChange(snapshot: DataSnapshot) {
+                snapshot.children.forEach { productDB ->
+                    val productTemp = productDB.getValue(Product::class.java)
+
+                    if (productTemp != null) {
+                        if (product.barcode == productTemp.barcode) {
+                            productTemp.numberOfProducts += product.numberOfProducts
+
+                            productId = productDB.key.toString()
+                            productAvailable = true
+
+                            addSingleProduct(
+                                user = user,
+                                productAvailable = true,
+                                productId = productId,
+                                product = productTemp
+                            )
+                        }
+                    }
+                }
+
+                if (!productAvailable) {
+                    addSingleProduct(
+                        user = user,
+                        productAvailable = false,
+                        productId = "",
+                        product = product
+                    )
+                }
+            }
+
+            override fun onCancelled(error: DatabaseError) {
+                TODO("Not yet implemented")
+            }
+        })
+    }
+}
+
+
+private fun addSingleProduct(
+    user: UserData?,
+    productAvailable: Boolean,
+    productId: String,
+    product: Product
+) {
+    if (user != null) {
         val uid = user.userId
+        val newProductId: String
+        val database = FirebaseDatabase.getInstance().getReference("users/$uid")
 
-        val userRef = database.getReference("users/$uid")
-        val productId = userRef.push().key
+        if (productAvailable) {
+            database.child("products/$productId").setValue(product)
 
-        userRef.child("products/$productId").setValue(product)
+        } else {
+            newProductId = database.push().key.toString()
+
+            database.child("products/$newProductId").setValue(product)
+        }
     }
 }
 
@@ -58,7 +115,6 @@ class ProductsViewModel : ViewModel() {
             database.addValueEventListener(object : ValueEventListener {
                 override fun onDataChange(snapshot: DataSnapshot) {
                     val products = snapshot.children.mapNotNull { it.getValue(Product::class.java) }
-                        .filter { product -> product.availability }
 
                     _products.value = products
                 }

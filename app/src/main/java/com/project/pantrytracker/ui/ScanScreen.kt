@@ -19,13 +19,21 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyHorizontalGrid
 import androidx.compose.foundation.lazy.grid.items
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Remove
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
@@ -41,6 +49,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalLifecycleOwner
@@ -66,6 +75,7 @@ import com.project.pantrytracker.barcodeApi.BarcodeApi
 import com.project.pantrytracker.enumsData.Screens
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
+import kotlin.math.abs
 
 /**
  * Metodo che definisce un composable per la scansione e l'apposita modifica di prodotti.
@@ -86,7 +96,7 @@ fun UseScanScreen(
 
     // Definizione di una variabile mutabile di stato per il prodotto
     var product by remember {
-        mutableStateOf(Product("", "", "", emptyList(), "", false))
+        mutableStateOf(Product("", "", "", emptyList(), "", 1))
     }
 
     //Definizione del NavHost per gestire la navigazione tra le schermate
@@ -331,120 +341,17 @@ private fun EditProductScan(
         mutableStateOf(product.brands.joinToString())
     }
 
+    var numberOfProductsText by remember {
+        mutableStateOf(product.numberOfProducts)
+    }
+
     //Variabile di stato e mutabile che contiene la categoria del
     // prodotto scannerizzato, se essa c'è.
     var category by remember {
         mutableStateOf(product.category)
     }
 
-    //Column principale, la quale occupa tutta la dimensione dello schermo e ha al suo interno
-    //i componenti visuali.
-    Column(
-        verticalArrangement = Arrangement.spacedBy(25.dp),
-        modifier = Modifier
-            .padding(paddingValues)
-            .padding(15.dp)
-    ) {
-        //Row con il testo principale e il pulsante per andare avanti.
-        //TODO Eseguire dei maledetti controlli perché si rischia di far esplodere gli oggetti,
-        // perché gli utenti sono stupidi.
-        Row(
-            modifier = Modifier
-                .fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-
-            //Text con il nome della schermata che si sta utilizzando.
-            Text(
-                text = "Add New Object",
-                fontWeight = FontWeight.Bold,
-                style = MaterialTheme.typography.titleLarge
-            )
-
-            //Button il quale serve per salvare l'oggetto scannerizzato e successivamente modificato.
-            //TODO Devo controllare l'oggetto che sto per salvare.
-            Button(
-                onClick = {
-                    /*
-                     * Controllo che ci sia un utente loggatto prima di salvare il prodotto nel DB.
-                     *
-                     * TODO Aggiungere ulteriore controllo su ogni variabile che va a finire come
-                     *  parametro dell'oggetto, perché la gente scrive a cazzo (coño de la madre,
-                     *  mmgvasea, no funciona bien).
-                     */
-                    if (userData != null) {
-
-                        //Funzione che salva il prodotto preso come parametro nel DB Realtime.
-                        //TODO Da ottimizzare di più, si rischiano conflitti I'M FUCKING INSANE.
-                        addProductDb(
-                            product = Product(
-                                barcode = barcodeText,
-                                name = nameText,
-                                quantity = quantityText,
-                                brands = if (brandsText.contains(",")) brandsText.split(",") else listOf(brandsText),
-                                category = category,
-                                availability = true
-                            ),
-                            user = userData
-                        )
-                    }
-
-                    //Torna nella schermata iniziale del menù.
-                    //(in teoria funge "spero").
-                    changeMenu(Screens.HOME)
-                },
-                shape = RoundedCornerShape(10.dp),
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = MaterialTheme.colorScheme.tertiary
-                )
-            ) {
-                //Text con il testo per il pulsante.
-                Text(text = "Add")
-            }
-        }
-
-        //Chiamata alla funzione composable che contiene la grafica per modificare l'oggetto.
-        ListScanItem(
-            barcodeText = barcodeText,
-            changeBarcodeText = { barcodeText = it },
-            nameText = nameText,
-            changeNameText = { nameText = it },
-            quantityText = quantityText,
-            changeQuantityText = { quantityText = it },
-            brandsText = brandsText,
-            changeBrandsText = { brandsText = it },
-            changeCategory = { category = it }
-        )
-    }
-}
-
-/**
- * Metodo che definisce un composable per la modifica di tutti i parametri del prodotto scansionato.
- * @author Eliomar Alejandro Rodriguez Ferrer.
- *
- * @param barcodeText Stringa che contiene il barcode del prodotto.
- * @param changeBarcodeText Funzione per modificare la stringa contenente il barcode del prodotto.
- * @param nameText Stringa che contiene il nome del prodotto.
- * @param changeNameText Funzione per modificare la stringa contenete il nome del prodotto.
- * @param quantityText Stringa che contiene la dimensione del prodotto.
- * @param changeQuantityText Funzione per modificare la stringa contenente la dimensione del prodotto.
- * @param brandsText Stringa che contiene i marchi del prodotto.
- * @param changeBrandsText Funzione per modificare la stringa contenente i marchi del prodotto.
- * @param changeCategory Funzione per modificare la srringa contenente la categoria del prodotto.
- */
-@Composable
-private fun ListScanItem(
-    barcodeText: String,
-    changeBarcodeText: (String) -> Unit,
-    nameText: String,
-    changeNameText: (String) -> Unit,
-    quantityText: String,
-    changeQuantityText: (String) -> Unit,
-    brandsText: String,
-    changeBrandsText: (String) -> Unit,
-    changeCategory: (String) -> Unit
-) {
+    //Chiamata alla funzione composable che contiene la grafica per modificare l'oggetto.
     //Lista con delle categorie in forma di test.
     val testItemsCategories = listOf(
         CategoriesItemData(
@@ -486,89 +393,18 @@ private fun ListScanItem(
 
     //Column principale, la quale occupa tutta la dimensione dello schermo e ha al suo interno
     //i componenti visuali.
-    Column(
-        modifier = Modifier.fillMaxSize(),
-        verticalArrangement = Arrangement.spacedBy(15.dp)
+    LazyColumn(
+        verticalArrangement = Arrangement.spacedBy(15.dp),
+        modifier = Modifier
+            .padding(paddingValues)
+            .padding(15.dp)
     ) {
-        //TextField customizzato per la modifica del barcode del prodotto.
-        //TODO Devo renderlo non personalizzabile se las stringa non è vuota,
-        // perché il barcode è sempre quello, e l'utente coglione se modifica
-        // rischia di fare casino, quindi, sono un coglione.
-        // Devo anche aggiungere un effetto visuale per i controlli.
-        CustomTextField(
-            value = barcodeText,
-            onValueChange = changeBarcodeText,
-            titleTextField = "Barcode",
-            labelTextField = {
-                Text(
-                    text = "Write the product barcode"
-                )
-            }
-        )
-
-        //TextField customizzato per la modifica del nome del prodotto.
-        // TODO Devo anche aggiungere un effetto visuale per i controlli.
-        CustomTextField(
-            value = nameText,
-            onValueChange = changeNameText,
-            titleTextField = "Name product",
-            labelTextField = {
-                Text(
-                    text = "Write the name product"
-                )
-            }
-        )
-
-        //TextField customizzato per la modifica della dimensione del prodotto.
-        // TODO Devo anche aggiungere un effetto visuale per i controlli.
-        CustomTextField(
-            value = quantityText,
-            onValueChange = changeQuantityText,
-            titleTextField = "Quantity product",
-            labelTextField = {
-                Text(
-                    text = "Write the quantity of product"
-                )
-            }
-        )
-
-        //TextField customizzato per la modifica dei marchi del prodotto.
-        // TODO Devo anche aggiungere un effetto visuale per i controlli.
-        //  Devo anche aggiungere un controllo che i marchi possano essere soltanto spazziati con
-        //  delle virgole, sennò al creare la lista con i marchi si richia il crash dell'app,
-        //  dio non c'è la faccio più con tutti sti controlli del cazzo.
-        CustomTextField(
-            value = brandsText,
-            onValueChange = changeBrandsText,
-            titleTextField = "Brands products",
-            labelTextField = {
-                Text(
-                    text = "Write the brands of the product"
-                )
-            }
-        )
-
-        //Column che contiene il testo che dice il sotto menù e una griglia con le
-        // categorie da selezionare.
-        Column {
-            //Text con il nome del sotto menù.
-            Text(
-                text = "Category",
-                fontWeight = FontWeight.Bold,
-                modifier = Modifier
-                    .padding(
-                        start = 5.dp,
-                        bottom = 10.dp
-                    )
-            )
-
+        item {
             //LazyHorizontalGrid che contiene in forma di griglia le categorie che
             // possono essere scelte.
-            LazyHorizontalGrid(
-                rows = GridCells.Adaptive(60.dp),
-                horizontalArrangement = Arrangement.spacedBy(15.dp),
-                modifier = Modifier
-                    .fillMaxWidth()
+            LazyRow(
+                //contentPadding = PaddingValues(start = 10.dp, end = 10.dp),
+                horizontalArrangement = Arrangement.spacedBy(15.dp)
             ) {
                 //Itera la lista di categorie per essere mosrate nella griglia.
                 items(testItemsCategories) { item ->
@@ -576,10 +412,198 @@ private fun ListScanItem(
                     //Item della singola categoria.
                     CategoryItem(
                         categoriesItemData = item,
-                        changeCategory = changeCategory
+                        changeCategory = { category = it }
                     )
                 }
             }
+        }
+
+        //TextField customizzato per la modifica del barcode del prodotto.
+        //TODO Devo renderlo non personalizzabile se las stringa non è vuota,
+        // perché il barcode è sempre quello, e l'utente coglione se modifica
+        // rischia di fare casino, quindi, sono un coglione.
+        // Devo anche aggiungere un effetto visuale per i controlli.
+        item {
+            CustomTextField(
+                value = barcodeText,
+                onValueChange = { barcodeText = it },
+                titleTextField = "Barcode",
+                modifier = Modifier.fillMaxWidth(),
+                labelTextField = {
+                    Text(
+                        text = "Write the product barcode"
+                    )
+                }
+            )
+        }
+
+        //TextField customizzato per la modifica del nome del prodotto.
+        // TODO Devo anche aggiungere un effetto visuale per i controlli.
+        item {
+            CustomTextField(
+                value = nameText,
+                onValueChange = { nameText = it },
+                titleTextField = "Name product",
+                modifier = Modifier.fillMaxWidth(),
+                labelTextField = {
+                    Text(
+                        text = "Write the name product"
+                    )
+                }
+            )
+        }
+
+        //TextField customizzato per la modifica della dimensione del prodotto.
+        // TODO Devo anche aggiungere un effetto visuale per i controlli.
+        item {
+            CustomTextField(
+                value = quantityText,
+                onValueChange = { quantityText = it },
+                titleTextField = "Quantity product",
+                modifier = Modifier.fillMaxWidth(),
+                labelTextField = {
+                    Text(
+                        text = "Write the quantity of product"
+                    )
+                }
+            )
+        }
+
+        //TextField customizzato per la modifica dei marchi del prodotto.
+        // TODO Devo anche aggiungere un effetto visuale per i controlli.
+        //  Devo anche aggiungere un controllo che i marchi possano essere soltanto spazziati con
+        //  delle virgole, sennò al creare la lista con i marchi si richia il crash dell'app,
+        //  dio non c'è la faccio più con tutti sti controlli del cazzo.
+        item {
+            CustomTextField(
+                value = brandsText,
+                onValueChange = { brandsText = it },
+                titleTextField = "Brands products",
+                modifier = Modifier.fillMaxWidth(),
+                labelTextField = {
+                    Text(
+                        text = "Write the brands of the product"
+                    )
+                }
+            )
+        }
+
+        item {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween,
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Text(
+                    text = "Numbers of products",
+                    fontWeight = FontWeight.Bold,
+                    modifier = Modifier.padding(
+                        start = 5.dp
+                    )
+                )
+
+                NumberPicker(
+                    changeNumber = { numberOfProductsText = it },
+                    number = numberOfProductsText
+                )
+            }
+        }
+
+        item {
+            //Button il quale serve per salvare l'oggetto scannerizzato e successivamente modificato.
+            //TODO Devo controllare l'oggetto che sto per salvare.
+            Button(
+                onClick = {
+                    /*
+                     * Controllo che ci sia un utente loggatto prima di salvare il prodotto nel DB.
+                     *
+                     * TODO Aggiungere ulteriore controllo su ogni variabile che va a finire come
+                     *  parametro dell'oggetto, perché la gente scrive a cazzo (coño de la madre,
+                     *  mmgvasea, no funciona bien).
+                     */
+                    if (userData != null) {
+
+                        //Funzione che salva il prodotto preso come parametro nel DB Realtime.
+                        //TODO Da ottimizzare di più, si rischiano conflitti I'M FUCKING INSANE.
+                        addProductDb(
+                            product = Product(
+                                barcode = barcodeText,
+                                name = nameText,
+                                quantity = quantityText,
+                                brands = if (brandsText.contains(",")) brandsText.split(",") else listOf(brandsText),
+                                category = category,
+                                numberOfProducts = numberOfProductsText
+                            ),
+                            user = userData
+                        )
+                    }
+
+                    //Torna nella schermata iniziale del menù.
+                    //(in teoria funge "spero").
+                    changeMenu(Screens.HOME)
+                },
+                modifier = Modifier
+                    .fillMaxWidth(),
+                shape = RoundedCornerShape(10.dp),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = MaterialTheme.colorScheme.secondary
+                )
+            ) {
+                //Text con il testo per il pulsante.
+                Text(text = "Add")
+            }
+        }
+    }
+}
+
+
+@Composable
+private fun NumberPicker(
+    changeNumber: (Int) -> Unit,
+    number: Int
+) {
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(10.dp)
+    ) {
+
+        IconButton(
+            onClick = {
+                changeNumber(if (abs(number - 1) < 0) 0 else abs(number - 1))
+            },
+            modifier = Modifier
+                .background(
+                    color = MaterialTheme.colorScheme.secondaryContainer,
+                    shape = RoundedCornerShape(10.dp)
+                )
+        ) {
+            Icon(
+                imageVector = Icons.Filled.Remove,
+                contentDescription = null,
+                tint = Color.White
+            )
+        }
+
+        Text(
+            text = number.toString(),
+            fontWeight = FontWeight.Bold
+        )
+
+        IconButton(
+            onClick = {
+                changeNumber(number + 1)
+            },
+            modifier = Modifier
+                .background(
+                    color = MaterialTheme.colorScheme.secondaryContainer,
+                    shape = RoundedCornerShape(10.dp)
+                )
+        ) {
+            Icon(
+                imageVector = Icons.Filled.Add,
+                contentDescription = null,
+                tint = Color.White
+            )
         }
     }
 }
@@ -604,7 +628,7 @@ private fun CategoryItem(
             modifier = Modifier
                 .clip(
                     shape = RoundedCornerShape(
-                        size = 10.dp
+                        size = 7.dp
                     )
                 )
                 .background(
@@ -620,7 +644,12 @@ private fun CategoryItem(
             Text(
                 text = categoriesItemData.nameCategory,
                 modifier = Modifier
-                    .padding(15.dp)
+                    .padding(
+                        start = 10.dp,
+                        end = 10.dp,
+                        top = 10.dp,
+                        bottom = 10.dp
+                    )
             )
         }
     }
@@ -640,7 +669,8 @@ private fun CustomTextField(
     value: String,
     onValueChange: (String) -> Unit,
     titleTextField: String,
-    labelTextField: @Composable () -> Unit
+    labelTextField: @Composable () -> Unit,
+    modifier: Modifier
 ){
     //Column che contiene il titolo e la textfield allineate a sinistra.
     Column(
@@ -660,7 +690,7 @@ private fun CustomTextField(
         TextField(
             value = value,
             onValueChange = onValueChange,
-            modifier = Modifier.fillMaxWidth(),
+            modifier = modifier,
             shape =  RoundedCornerShape(5.dp),
             label = labelTextField,
             colors = TextFieldDefaults.colors(
@@ -709,13 +739,13 @@ private fun CameraBarcodeScan(
         //Verifica se il codice a barre non è vuoto.
         if (barCodeVal != "") {
             //Cerca il prodotto utilizzando il codice a barre.
+            //ricerca del codice a barre con l'api.
             val product = BarcodeApi().searchBarcode(barCodeVal)
 
             //Mostra un messaggio Toast con il nome del prodotto (commentato)
             //Toast.makeText(context, product?.name ?: "niente", Toast.LENGTH_SHORT).show()
 
             //Cambia il prodotto corrente con quello restituito dalla
-            //ricerca del codice a barre con l'api.
             changeProduct(product)
 
             //Naviga verso il composable "modifier_product".
