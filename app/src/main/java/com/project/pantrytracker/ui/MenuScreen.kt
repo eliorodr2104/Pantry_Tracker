@@ -23,10 +23,10 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -41,7 +41,6 @@ import com.project.pantrytracker.Firebase.addProductDb
 import com.project.pantrytracker.enumsData.Screens.ADD_PRODUCT
 import com.project.pantrytracker.enumsData.Screens.HOME
 import com.project.pantrytracker.enumsData.Screens.LIST_PRODUCTS
-import kotlinx.coroutines.launch
 
 @Preview
 @OptIn(ExperimentalMaterial3Api::class)
@@ -54,7 +53,9 @@ fun MenuScreen(
         mutableStateOf(HOME)
     }
 
-    val coroutineScope = rememberCoroutineScope()
+    var signOutUser by remember {
+        mutableStateOf(false)
+    }
 
     val itemsBottomBar = listOf(
         BottomBarItemData(
@@ -73,6 +74,13 @@ fun MenuScreen(
             alwaysShowLabel = screenOption == LIST_PRODUCTS
         )
     )
+
+    LaunchedEffect(
+        key1 = signOutUser
+    ) {
+        if (signOutUser)
+            signOut()
+    }
 
     Scaffold(
         topBar = {
@@ -95,9 +103,7 @@ fun MenuScreen(
                 actions = {
                     IconButton(
                         onClick = {
-                            coroutineScope.launch {
-                                signOut()
-                            }
+                            signOutUser = true
                         }
                     ) {
                         if (userData?.profilePictureUrl != null) {
