@@ -131,7 +131,8 @@ class MainActivity : ComponentActivity() {
                             Surface(color = MaterialTheme.colorScheme.background) {
                                 //ScanScreen()
                                 MenuScreen(
-                                    userData = googleAuthUiClient.getSignedInUser()
+                                    userData = googleAuthUiClient.getSignedInUser(),
+                                    signOut = { googleAuthUiClient.signOut() }
                                 )
 
                                 /*

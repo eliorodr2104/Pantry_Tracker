@@ -12,22 +12,26 @@ import com.project.pantrytracker.Firebase.LoginGoogle.UserData
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 
-/*
+
 fun createUserDb(user: UserData?) {
     val database = FirebaseDatabase.getInstance()
+    val usersNodeReference: DatabaseReference
+    val userDetails: DatabaseReference
+    val detailsUser: HashMap<String, String>
 
-    if (user?.userId != null) {
-        val uid = user.userId
-        val userRef = database.getReference("users").child(uid)
+    if (user != null) {
+        usersNodeReference = database.getReference("users").child(user.userId)
 
-        val productsRef = userRef.child("products")
+        userDetails = usersNodeReference.child("userDetails")
 
-        val defaultProduct = listOf("default")
+        detailsUser = hashMapOf(
+            "name" to user.username.toString(),
+            "email" to user.email.toString()
+        )
 
-        productsRef.setValue(defaultProduct)
+        userDetails.setValue(detailsUser)
     }
 }
- */
 
 fun addProductDb(
     product: Product,

@@ -4,9 +4,7 @@ import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
@@ -28,8 +26,8 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontWeight
@@ -39,21 +37,24 @@ import coil.compose.AsyncImage
 import com.project.pantrytracker.DataItems.BottomBarItemData
 import com.project.pantrytracker.DataItems.Product
 import com.project.pantrytracker.Firebase.LoginGoogle.UserData
-import com.project.pantrytracker.Firebase.ProductsViewModel
 import com.project.pantrytracker.Firebase.addProductDb
 import com.project.pantrytracker.enumsData.Screens.ADD_PRODUCT
 import com.project.pantrytracker.enumsData.Screens.HOME
 import com.project.pantrytracker.enumsData.Screens.LIST_PRODUCTS
+import kotlinx.coroutines.launch
 
 @Preview
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun MenuScreen(
-    userData: UserData? = UserData("", "", null)
+    userData: UserData? = UserData("", "", "", null),
+    signOut: suspend () -> Unit = {  }
 ) {
     var screenOption by remember {
         mutableStateOf(HOME)
     }
+
+    val coroutineScope = rememberCoroutineScope()
 
     val itemsBottomBar = listOf(
         BottomBarItemData(
@@ -92,7 +93,13 @@ fun MenuScreen(
                 },
 
                 actions = {
-                    IconButton(onClick = { /*TODO*/ }) {
+                    IconButton(
+                        onClick = {
+                            coroutineScope.launch {
+                                signOut()
+                            }
+                        }
+                    ) {
                         if (userData?.profilePictureUrl != null) {
                             AsyncImage(
                                 model = userData.profilePictureUrl,
