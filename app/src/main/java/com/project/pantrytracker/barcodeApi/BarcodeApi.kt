@@ -1,12 +1,16 @@
 package com.project.pantrytracker.barcodeApi
 
 
-import com.project.pantrytracker.DataItems.Product
+import com.project.pantrytracker.DataItems.ProductApi
 import com.squareup.moshi.JsonDataException
 import com.squareup.moshi.Moshi
 import com.squareup.moshi.adapter
 import io.ktor.client.HttpClient
 import io.ktor.client.engine.cio.CIO
+import io.ktor.client.network.sockets.ConnectTimeoutException
+import io.ktor.client.network.sockets.SocketTimeoutException
+import io.ktor.client.plugins.HttpRequestTimeoutException
+import io.ktor.client.plugins.HttpTimeout
 import io.ktor.client.request.request
 import io.ktor.client.statement.HttpResponse
 import io.ktor.client.statement.bodyAsText
@@ -14,28 +18,45 @@ import io.ktor.http.HttpMethod
 import io.ktor.http.isSuccess
 
 class BarcodeApi {
-    private val client = HttpClient(CIO)
+    private val client = HttpClient(CIO) {
+        install(HttpTimeout) {
+            requestTimeoutMillis = 5000
+        }
+    }
     private val URL_API = "https://world.openfoodfacts.org/api/v2/product/"
 
-    suspend fun searchBarcode(barcode: String): Product {
+    suspend fun searchBarcode(barcode: String): ProductApi {
         return try {
             val response: HttpResponse = client.request("$URL_API$barcode.json") {
                 method = HttpMethod.Get
             }
 
-            convertJsonIntoObject(
-                json = response.validateResponse(),
-                barcode = barcode
-            )
+            println("Forse crasha:")
+            println(response.status)
 
-        } catch (exception: Exception) {
-            Product(
-                barcode = barcode,
-                name = "",
-                quantity = "",
-                brands = emptyList(),
-                category = "",
-                numberOfProducts = 1
+            if (response.status.value != 404) {
+                convertJsonIntoObject(
+                    json = response.validateResponse(),
+                    barcode = barcode
+                )
+
+            } else {
+                ProductApi(
+                    barcode = barcode
+                )
+            }
+
+        } catch (exception: HttpRequestTimeoutException) {
+            ProductApi(
+                exception = exception
+            )
+        } catch (exception: ConnectTimeoutException) {
+            ProductApi(
+                exception = exception
+            )
+        } catch (exception: SocketTimeoutException) {
+            ProductApi(
+                exception = exception
             )
         }
     }
@@ -44,13 +65,11 @@ class BarcodeApi {
     private fun convertJsonIntoObject(
         json: String?,
         barcode: String
-    ): Product {
+    ): ProductApi {
         return try {
             val moshi = Moshi.Builder().build()
 
             val jsonData = json?.let { moshi.adapter<Map<String, Any>>().fromJson(it) }
-
-            val barcodeProduct = jsonData?.get("code")
 
             val secondJson = jsonData?.get("product") as Map<*, *>
 
@@ -59,21 +78,15 @@ class BarcodeApi {
             val brandsProduct = secondJson["brands"].toString().split(",")
             //val categoriesProduct = secondJson["categories"].toString().split(",")
 
-            Product(
-                barcode = barcodeProduct.toString(),
+            ProductApi(
+                barcode = barcode,
                 name = nameProduct.toString(),
                 quantity = quantityProduct.toString(),
-                brands = brandsProduct,
-                numberOfProducts = 1
+                brands = brandsProduct
             )
         } catch (exception: JsonDataException) {
-            Product(
-                barcode = barcode,
-                name = "",
-                quantity = "",
-                brands = emptyList(),
-                category = "",
-                numberOfProducts = 1
+            ProductApi(
+                exception = exception
             )
         }
     }

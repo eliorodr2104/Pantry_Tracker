@@ -6,7 +6,6 @@ import androidx.camera.core.CameraSelector
 import androidx.camera.core.ImageAnalysis
 import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.camera.view.PreviewView
-import androidx.compose.animation.animateContentSize
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -21,27 +20,25 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
-import androidx.compose.foundation.lazy.grid.GridCells
-import androidx.compose.foundation.lazy.grid.LazyHorizontalGrid
-import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Remove
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
 import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -49,14 +46,12 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.content.ContextCompat
@@ -68,11 +63,15 @@ import com.google.common.util.concurrent.ListenableFuture
 import com.project.pantrytracker.BarcodeScanner.BarCodeAnalyser
 import com.project.pantrytracker.DataItems.CategoriesItemData
 import com.project.pantrytracker.DataItems.Product
+import com.project.pantrytracker.DataItems.ProductApi
 import com.project.pantrytracker.Firebase.LoginGoogle.UserData
 import com.project.pantrytracker.Firebase.addProductDb
 import com.project.pantrytracker.R
 import com.project.pantrytracker.barcodeApi.BarcodeApi
 import com.project.pantrytracker.enumsData.Screens
+import io.ktor.client.network.sockets.ConnectTimeoutException
+import io.ktor.client.network.sockets.SocketTimeoutException
+import io.ktor.client.plugins.HttpRequestTimeoutException
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
 import kotlin.math.abs
@@ -242,6 +241,24 @@ fun ScanScreen(
     changeProduct: (Product?) -> Unit,
     paddingValues: PaddingValues
 ) {
+    var showAlertDialog by remember {
+        mutableStateOf(false)
+    }
+    var titleErrorAlert by remember {
+        mutableStateOf("")
+    }
+    var bodyErrorAlert by remember {
+        mutableStateOf("")
+    }
+
+    var tempProductApi by remember {
+        mutableStateOf(ProductApi())
+    }
+
+    //Variabile di stato mutabile che contiene un valore booleano per
+    // fermare il processo della telecamera.
+    var cameraPaused by remember { mutableStateOf(false) }
+
     //Column iniziale che occupa tutto lo schermo e ha al suo interno tutta la grafica
     //della schermata
     Column(
@@ -293,11 +310,35 @@ fun ScanScreen(
                     //Funzione che mostra la telecamera in uso
                     CameraBarcodeScan(
                         changeProduct = changeProduct,
-                        navController = navController
+                        navController = navController,
+                        changeShowAlertDialog = { showAlertDialog = it },
+                        changeTextError = { titleErrorAlert = it },
+                        changeBodyError = { bodyErrorAlert = it },
+                        changeTempProductApi = { tempProductApi = it },
+                        cameraPaused = cameraPaused,
+                        changeCameraPaused = { cameraPaused = it }
                     )
                 }
             }
         }
+
+        if (showAlertDialog)
+            AlertDialogError(
+                changeViewDialog = { showAlertDialog = it },
+                titleText = titleErrorAlert,
+                bodyText = bodyErrorAlert,
+                changeProduct = changeProduct,
+                product = Product(
+                    barcode = tempProductApi.barcode,
+                    name = tempProductApi.name,
+                    quantity = tempProductApi.quantity,
+                    brands = tempProductApi.brands,
+                    category = tempProductApi.category,
+                    numberOfProducts = tempProductApi.numberOfProducts
+                ),
+                changeCameraPaused = { cameraPaused = it },
+                navController = navController
+            )
     }
 }
 
@@ -324,15 +365,28 @@ private fun EditProductScan(
         mutableStateOf(product.barcode)
     }
 
+    var showAlertBarcode by remember {
+        mutableStateOf(false)
+    }
+
     //Variabile di stato e mutabile che contiene il nome del
     // prodotto scannerizzato, se esso c'è.
     var nameText by remember {
         mutableStateOf(product.name)
     }
+
+    var showAlertName by remember {
+        mutableStateOf(false)
+    }
+
     //Variabile di stato e mutabile che contiene la quantità del
     // prodotto scannerizzato, se esso c'è.
     var quantityText by remember {
         mutableStateOf(product.quantity)
+    }
+
+    var showAlertQuantity by remember {
+        mutableStateOf(false)
     }
 
     //Variabile di stato e mutabile che contiene i marchi del
@@ -341,8 +395,12 @@ private fun EditProductScan(
         mutableStateOf(product.brands.joinToString())
     }
 
+    var showAlertBrands by remember {
+        mutableStateOf(false)
+    }
+
     var numberOfProductsText by remember {
-        mutableStateOf(product.numberOfProducts)
+        mutableIntStateOf(product.numberOfProducts)
     }
 
     //Variabile di stato e mutabile che contiene la categoria del
@@ -429,6 +487,7 @@ private fun EditProductScan(
                 onValueChange = { barcodeText = it },
                 titleTextField = "Barcode",
                 modifier = Modifier.fillMaxWidth(),
+                isError = showAlertBarcode,
                 labelTextField = {
                     Text(
                         text = "Write the product barcode"
@@ -445,6 +504,7 @@ private fun EditProductScan(
                 onValueChange = { nameText = it },
                 titleTextField = "Name product",
                 modifier = Modifier.fillMaxWidth(),
+                isError = showAlertName,
                 labelTextField = {
                     Text(
                         text = "Write the name product"
@@ -461,6 +521,7 @@ private fun EditProductScan(
                 onValueChange = { quantityText = it },
                 titleTextField = "Quantity product",
                 modifier = Modifier.fillMaxWidth(),
+                isError = showAlertQuantity,
                 labelTextField = {
                     Text(
                         text = "Write the quantity of product"
@@ -480,6 +541,7 @@ private fun EditProductScan(
                 onValueChange = { brandsText = it },
                 titleTextField = "Brands products",
                 modifier = Modifier.fillMaxWidth(),
+                isError = showAlertBrands,
                 labelTextField = {
                     Text(
                         text = "Write the brands of the product"
@@ -504,7 +566,8 @@ private fun EditProductScan(
 
                 NumberPicker(
                     changeNumber = { numberOfProductsText = it },
-                    number = numberOfProductsText
+                    number = numberOfProductsText,
+                    color = MaterialTheme.colorScheme.secondaryContainer
                 )
             }
         }
@@ -514,6 +577,11 @@ private fun EditProductScan(
             //TODO Devo controllare l'oggetto che sto per salvare.
             Button(
                 onClick = {
+                    showAlertBarcode = barcodeText == ""
+                    showAlertName = nameText == ""
+                    showAlertQuantity = quantityText == ""
+                    showAlertBrands = brandsText == ""
+
                     /*
                      * Controllo che ci sia un utente loggatto prima di salvare il prodotto nel DB.
                      *
@@ -523,19 +591,28 @@ private fun EditProductScan(
                      */
                     if (userData != null) {
 
-                        //Funzione che salva il prodotto preso come parametro nel DB Realtime.
-                        //TODO Da ottimizzare di più, si rischiano conflitti I'M FUCKING INSANE.
-                        addProductDb(
-                            product = Product(
-                                barcode = barcodeText,
-                                name = nameText,
-                                quantity = quantityText,
-                                brands = if (brandsText.contains(",")) brandsText.split(",") else listOf(brandsText),
-                                category = category,
-                                numberOfProducts = numberOfProductsText
-                            ),
-                            user = userData
-                        )
+                        if (
+                            !showAlertBarcode &&
+                            !showAlertName &&
+                            !showAlertQuantity &&
+                            !showAlertBrands &&
+                            numberOfProductsText >= 1
+                        ) {
+                            //Funzione che salva il prodotto preso come parametro nel DB Realtime.
+                            //TODO Da ottimizzare di più, si rischiano conflitti I'M FUCKING INSANE.
+                            addProductDb(
+                                product = Product(
+                                    barcode = barcodeText,
+                                    name = nameText,
+                                    quantity = quantityText,
+                                    brands = if (brandsText.contains(",")) brandsText.split(",") else listOf(brandsText),
+                                    category = category,
+                                    numberOfProducts = numberOfProductsText
+                                ),
+                                user = userData
+                            )
+
+                        }
                     }
 
                     //Torna nella schermata iniziale del menù.
@@ -558,9 +635,10 @@ private fun EditProductScan(
 
 
 @Composable
-private fun NumberPicker(
+fun NumberPicker(
     changeNumber: (Int) -> Unit,
-    number: Int
+    number: Int,
+    color: Color
 ) {
     Row(
         verticalAlignment = Alignment.CenterVertically,
@@ -572,9 +650,15 @@ private fun NumberPicker(
                 changeNumber(if (abs(number - 1) < 0) 0 else abs(number - 1))
             },
             modifier = Modifier
-                .background(
-                    color = MaterialTheme.colorScheme.secondaryContainer,
+                .clip(
                     shape = RoundedCornerShape(10.dp)
+                )
+                .background(
+                    color = color,
+                    shape = RoundedCornerShape(10.dp)
+                )
+                .size(
+                    40.dp
                 )
         ) {
             Icon(
@@ -586,6 +670,7 @@ private fun NumberPicker(
 
         Text(
             text = number.toString(),
+            style = MaterialTheme.typography.titleMedium,
             fontWeight = FontWeight.Bold
         )
 
@@ -594,9 +679,15 @@ private fun NumberPicker(
                 changeNumber(number + 1)
             },
             modifier = Modifier
-                .background(
-                    color = MaterialTheme.colorScheme.secondaryContainer,
+                .clip(
                     shape = RoundedCornerShape(10.dp)
+                )
+                .background(
+                    color = color,
+                    shape = RoundedCornerShape(10.dp)
+                )
+                .size(
+                    40.dp
                 )
         ) {
             Icon(
@@ -670,6 +761,7 @@ private fun CustomTextField(
     onValueChange: (String) -> Unit,
     titleTextField: String,
     labelTextField: @Composable () -> Unit,
+    isError: Boolean,
     modifier: Modifier
 ){
     //Column che contiene il titolo e la textfield allineate a sinistra.
@@ -692,6 +784,7 @@ private fun CustomTextField(
             onValueChange = onValueChange,
             modifier = modifier,
             shape =  RoundedCornerShape(5.dp),
+            isError = isError,
             label = labelTextField,
             colors = TextFieldDefaults.colors(
                 unfocusedIndicatorColor = Color.Transparent,
@@ -713,8 +806,18 @@ private fun CustomTextField(
 @Composable
 private fun CameraBarcodeScan(
     changeProduct: (Product?) -> Unit,
-    navController: NavController
+    changeShowAlertDialog: (Boolean) -> Unit,
+    changeTextError: (String) -> Unit,
+    changeBodyError: (String) -> Unit,
+    changeTempProductApi: (ProductApi) -> Unit,
+    navController: NavController,
+    cameraPaused: Boolean,
+    changeCameraPaused: (Boolean) -> Unit
 ) {
+    var tempProductApi by remember {
+        mutableStateOf(ProductApi())
+    }
+
     //Variabile che ha il contesto della schermata in processo.
     val context = LocalContext.current
 
@@ -727,11 +830,6 @@ private fun CameraBarcodeScan(
     //Variabile di stato mutabile che contiene il barcode scannerizzato.
     var barCodeVal by remember { mutableStateOf("") }
 
-    //Variabile di stato mutabile che contiene un valore booleano per
-    // fermare il processo della telecamera.
-    var cameraPaused by remember { mutableStateOf(false) }
-
-
     LaunchedEffect(
         key1 = barCodeVal != "" // Lancia l'effetto quando il valore del codice a barre non è vuoto.
     ) {
@@ -740,16 +838,48 @@ private fun CameraBarcodeScan(
         if (barCodeVal != "") {
             //Cerca il prodotto utilizzando il codice a barre.
             //ricerca del codice a barre con l'api.
-            val product = BarcodeApi().searchBarcode(barCodeVal)
+            tempProductApi = BarcodeApi().searchBarcode(barCodeVal)
+            changeTempProductApi(tempProductApi)
 
             //Mostra un messaggio Toast con il nome del prodotto (commentato)
             //Toast.makeText(context, product?.name ?: "niente", Toast.LENGTH_SHORT).show()
 
-            //Cambia il prodotto corrente con quello restituito dalla
-            changeProduct(product)
+            when(tempProductApi.exception) {
+                is ConnectTimeoutException -> {
+                    changeTextError("Error connection")
+                    changeBodyError("The connection to the API failed")
+                    changeShowAlertDialog(true)
+                }
 
-            //Naviga verso il composable "modifier_product".
-            navController.navigate("modifier_product")
+                is HttpRequestTimeoutException -> {
+                    changeTextError("Error request")
+                    changeBodyError("The request to api was unsuccessful")
+                    changeShowAlertDialog(true)
+                }
+
+                is SocketTimeoutException -> {
+                    changeTextError("Error socket")
+                    changeBodyError("The session with the api was interrupted")
+                    changeShowAlertDialog(true)
+                }
+
+                null -> {
+                    //Cambia il prodotto corrente con quello restituito dalla
+                    changeProduct(
+                        Product(
+                            barcode = tempProductApi.barcode,
+                            name = tempProductApi.name,
+                            quantity = tempProductApi.quantity,
+                            brands = tempProductApi.brands,
+                            category = tempProductApi.category,
+                            numberOfProducts = tempProductApi.numberOfProducts
+                        )
+                    )
+
+                    //Naviga verso il composable "modifier_product".
+                    navController.navigate("modifier_product")
+                }
+            }
 
             //Resettare il valore del codice a barre a una stringa vuota.
             barCodeVal = ""
@@ -810,7 +940,7 @@ private fun CameraBarcodeScan(
 
                             //Stoppa la telecamera e il rilevamento dei codici a barre
                             cameraProvider.unbindAll()
-                            cameraPaused = true
+                            changeCameraPaused(true)
                         }
                     }
                 }
@@ -851,6 +981,58 @@ private fun CameraBarcodeScan(
                     Log.d("TAG", "CameraPreview: ${e.localizedMessage}")
                 }
             }, ContextCompat.getMainExecutor(context))
+        }
+    )
+}
+
+@Composable
+private fun AlertDialogError(
+    changeViewDialog: (Boolean) -> Unit,
+    titleText: String,
+    bodyText: String,
+    changeProduct: (Product) -> Unit,
+    product: Product,
+    changeCameraPaused: (Boolean) -> Unit,
+    navController: NavController
+) {
+    AlertDialog(
+        onDismissRequest = {
+            changeViewDialog(false)
+        },
+
+        title = {
+            Text(
+                text = titleText
+            )
+        },
+
+        text = {
+            Text(
+                text = bodyText
+            )
+        },
+
+        confirmButton = {
+            Button(
+                onClick = {
+                    changeProduct(product)
+                    navController.navigate("modifier_product")
+                    changeViewDialog(false)
+                }
+            ) {
+                Text("Create manually")
+            }
+        },
+
+        dismissButton = {
+            Button(
+                onClick = {
+                    changeCameraPaused(false)
+                    changeViewDialog(false)
+                }
+            ) {
+                Text("Re-scan")
+            }
         }
     )
 }

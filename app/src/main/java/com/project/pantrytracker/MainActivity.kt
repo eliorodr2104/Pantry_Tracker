@@ -7,13 +7,10 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
 import androidx.activity.result.IntentSenderRequest
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Surface
+import androidx.compose.material3.windowsizeclass.ExperimentalMaterial3WindowSizeClassApi
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.ui.Modifier
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.compose.NavHost
@@ -39,89 +36,84 @@ class MainActivity : ComponentActivity() {
         )
     }
 
+    @OptIn(ExperimentalMaterial3WindowSizeClassApi::class)
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
         setContent {
             PantryTrackerTheme {
-                Surface(
-                    modifier = Modifier.fillMaxSize(),
-                    color = MaterialTheme.colorScheme.background
-                ) {
-                    val navController = rememberNavController()
+                val navController = rememberNavController()
 
-                    NavHost(navController = navController, startDestination = "sign_in") {
-                        composable("sign_in") {
-                            val viewModel = viewModel<SignInViewModel>()
-                            val state by viewModel.state.collectAsState()
+                NavHost(navController = navController, startDestination = "sign_in") {
+                    composable("sign_in") {
+                        val viewModel = viewModel<SignInViewModel>()
+                        val state by viewModel.state.collectAsState()
 
-                            LaunchedEffect(key1 = Unit) {
-                                if(googleAuthUiClient.getSignedInUser() != null) {
+                        LaunchedEffect(key1 = Unit) {
+                            if(googleAuthUiClient.getSignedInUser() != null) {
 
-                                    navController.navigate("profile")
-                                }
-                            }
-
-                            val launcher = rememberLauncherForActivityResult(
-                                contract = ActivityResultContracts.StartIntentSenderForResult(),
-                                onResult = { result ->
-                                    lifecycleScope.launch {
-                                        val signInResult = googleAuthUiClient.signInWithIntent(
-                                            intent = result.data ?: return@launch
-                                        )
-                                        viewModel.onSignInResult(signInResult)
-                                    }
-                                }
-                            )
-
-                            LaunchedEffect(
-                                key1 = state.isSignInSuccessful
-                            ) {
-                                if (state.isSignInSuccessful) {
-                                    Toast.makeText(
-                                        applicationContext,
-                                        "Sign in successful",
-                                        Toast.LENGTH_LONG
-                                    ).show()
-
-                                    //test
-                                    createUserDb(googleAuthUiClient.getSignedInUser())
-
-                                    navController.navigate("profile")
-                                    viewModel.resetState()
-                                }
-                            }
-
-                            SignInScreen(
-                                state = state,
-                                onSignInClick = {
-                                    lifecycleScope.launch {
-                                        val signInIntentSender = googleAuthUiClient.signIn()
-                                        launcher.launch(
-                                            IntentSenderRequest.Builder(
-                                                signInIntentSender ?: return@launch
-                                            ).build()
-                                        )
-                                    }
-                                }
-                            )
-                        }
-
-                        composable("profile") {
-                            LaunchedEffect(key1 = Unit) {
-                                if(googleAuthUiClient.getSignedInUser() == null) {
-
-                                    navController.navigate("sign_in")
-                                }
-                            }
-
-                            Surface(color = MaterialTheme.colorScheme.background) {
-                                MenuScreen(
-                                    userData = googleAuthUiClient.getSignedInUser(),
-                                    signOut = { googleAuthUiClient.signOut() }
-                                )
+                                navController.navigate("profile")
                             }
                         }
+
+                        val launcher = rememberLauncherForActivityResult(
+                            contract = ActivityResultContracts.StartIntentSenderForResult(),
+                            onResult = { result ->
+                                lifecycleScope.launch {
+                                    val signInResult = googleAuthUiClient.signInWithIntent(
+                                        intent = result.data ?: return@launch
+                                    )
+                                    viewModel.onSignInResult(signInResult)
+                                }
+                            }
+                        )
+
+                        LaunchedEffect(
+                            key1 = state.isSignInSuccessful
+                        ) {
+                            if (state.isSignInSuccessful) {
+                                Toast.makeText(
+                                    applicationContext,
+                                    "Sign in successful",
+                                    Toast.LENGTH_LONG
+                                ).show()
+
+                                //test
+                                createUserDb(googleAuthUiClient.getSignedInUser())
+
+                                navController.navigate("profile")
+                                viewModel.resetState()
+                            }
+                        }
+
+                        SignInScreen(
+                            state = state,
+                            onSignInClick = {
+                                lifecycleScope.launch {
+                                    val signInIntentSender = googleAuthUiClient.signIn()
+                                    launcher.launch(
+                                        IntentSenderRequest.Builder(
+                                            signInIntentSender ?: return@launch
+                                        ).build()
+                                    )
+                                }
+                            }
+                        )
+                    }
+
+                    composable("profile") {
+                        LaunchedEffect(key1 = Unit) {
+                            if(googleAuthUiClient.getSignedInUser() == null) {
+
+                                navController.navigate("sign_in")
+                            }
+                        }
+
+                        MenuScreen(
+                            userData = googleAuthUiClient.getSignedInUser(),
+                            signOut = { googleAuthUiClient.signOut() },
+                            activity = this@MainActivity
+                        )
                     }
                 }
             }
