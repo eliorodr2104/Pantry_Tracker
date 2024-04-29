@@ -20,7 +20,7 @@ import io.ktor.http.isSuccess
 class BarcodeApi {
     private val client = HttpClient(CIO) {
         install(HttpTimeout) {
-            requestTimeoutMillis = 5000
+            requestTimeoutMillis = 6000
         }
     }
     private val URL_API = "https://world.openfoodfacts.org/api/v2/product/"

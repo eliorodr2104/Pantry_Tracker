@@ -109,6 +109,7 @@ class MainActivity : ComponentActivity() {
                             }
                         }
 
+                        //Menù dell'app con l'aggiunta della UI per il tablet
                         MenuScreen(
                             userData = googleAuthUiClient.getSignedInUser(),
                             signOut = { googleAuthUiClient.signOut() },

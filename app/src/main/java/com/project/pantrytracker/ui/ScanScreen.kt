@@ -634,6 +634,15 @@ private fun EditProductScan(
 }
 
 
+/**
+ * Funzione Composable NumberPicker, la quale ha due pulsanti e serve per aumentare o diminuire di
+ * uno il valore di una variabile intera.
+ * @author Eliomar Alejandro Rodriguez Ferrer.
+ *
+ * @param changeNumber Funzione che prende nella firma una variabile di tipo Int, per poi essere modificata.
+ * @param number Variabile di tipo Int, la quale viene aumentata o diminuita di uno.
+ * @param color Variabile color la quale cambia il colore dei pulsanti.
+ */
 @Composable
 fun NumberPicker(
     changeNumber: (Int) -> Unit,
@@ -754,6 +763,9 @@ private fun CategoryItem(
  * @param onValueChange Funzione per modificare il valore della stringa.
  * @param titleTextField Stringa che contiene il titolo del textfield.
  * @param labelTextField Funzione composable per il label interno del textfield.
+ * @param isError Variabile Boolean, la quale serve a notificare se c'è un errore nell'inserimento
+ * dei dati.
+ * @param modifier Variabile Modifier per modificare l'aspetto del TextField.
  */
 @Composable
 private fun CustomTextField(
@@ -801,7 +813,15 @@ private fun CustomTextField(
  * @author Eliomar Alejandro Rodriguez Ferrer.
  *
  * @param changeProduct Funzione per modificare il prodotto preso dall'api.
+ * @param changeShowAlertDialog Funzione che prende nella firma un Boolean e modifica la visibilità
+ * del Alert.
+ * @param changeTextError Funzione che prende nella firma una Stringa e cambia il titolo del Alert.
+ * @param changeBodyError Funzione che prende nella firma una Stringa e cambia il body del Alert.
+ * @param changeTempProductApi Funzione che prende nella firma un oggetto ProductApi e lo cambia per
+ * quello corrente.
  * @param navController Oggetto per la navigazione tra i composable.
+ * @param cameraPaused Variabile Boolean che viene utilizzata per stabilire lo stato della fotocamera.
+ * @param changeCameraPaused Funzione che prende nella firma un Boolean e cambia lo stato della fotocamera.
  */
 @Composable
 private fun CameraBarcodeScan(
@@ -985,6 +1005,21 @@ private fun CameraBarcodeScan(
     )
 }
 
+/**
+ * Funzione Composable AlertDialogError, la quale visualizza eventuali errori dalla richiesta HTTP.
+ * @author Eliomar Alejandro Rodriguez Ferrer.
+ *
+ * @param changeViewDialog Funzione che prende come prametro un Boolean la quale serve a modficare
+ * lo stato della visibilità del Alert.
+ * @param titleText Variabile di tipo String che ha il titolo del Alert.
+ * @param bodyText Variabile di tipo String che ha la spiegazione del Alert.
+ * @param changeProduct Funzione la quale prende come parametro un oggetto Product e
+ * serve a modificare il prodotto a quello corrente.
+ * @param product Variabile prodotto la quale è una istanza dell'oggetto Product.
+ * @param changeCameraPaused Funzione che prende come parametro un Boolean, la quale serve a stabilire
+ * lo stato della fotocamera come non pausato se si devide scannerizzare di nuovo il prodotto.
+ * @param navController Variabile di tipo NavController la quale serve a modificare la vista principale.
+ */
 @Composable
 private fun AlertDialogError(
     changeViewDialog: (Boolean) -> Unit,
