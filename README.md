@@ -11,5 +11,4 @@ Welcome to the Smart Shelf Manager, your ultimate solution for efficient househo
 - **Real-Time Database Updates**: Experience the convenience of a dynamic database that updates in real-time across all connected devices, ensuring accurate and up-to-date inventory management.
 
 ## License
-
-This project is licensed under the MIT License.
+This project is licensed under the [MIT License](LICENSE).
