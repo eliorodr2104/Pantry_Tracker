@@ -10,5 +10,7 @@ Welcome to the Smart Shelf Manager, your ultimate solution for efficient househo
 - **Personal Virtual Shelf**: Create and manage your virtual shelf, organizing scanned and customized product data for easy access.
 - **Real-Time Database Updates**: Experience the convenience of a dynamic database that updates in real-time across all connected devices, ensuring accurate and up-to-date inventory management.
 
+https://github.com/eliorodr2104/Pantry_Tracker/assets/104672885/7e4d9ee3-0032-4793-9ffa-07b365832b5f
+
 ## License
 This project is licensed under the [MIT License](LICENSE).
