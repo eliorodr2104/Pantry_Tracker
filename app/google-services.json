@@ -3,7 +3,7 @@
     "project_number": "866834411914",
     "firebase_url": "https://pantry-tracker-b597b-default-rtdb.europe-west1.firebasedatabase.app",
     "project_id": "pantry-tracker-b597b",
-    "storage_bucket": "pantry-tracker-b597b.appspot.com"
+    "storage_bucket": "pantry-tracker-b597b.firebasestorage.app"
   },
   "client": [
     {

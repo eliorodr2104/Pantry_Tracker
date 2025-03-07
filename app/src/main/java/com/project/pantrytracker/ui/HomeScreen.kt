@@ -1,168 +1,268 @@
 package com.project.pantrytracker.ui
 
-import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Text
+import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import com.project.pantrytracker.DataItems.InfoProductsHome
+import androidx.navigation.compose.NavHost
+import androidx.navigation.compose.composable
+import androidx.navigation.compose.currentBackStackEntryAsState
+import androidx.navigation.compose.rememberNavController
+import com.project.pantrytracker.Firebase.LoginGoogle.UserData
+import com.project.pantrytracker.items.products.Storage
+import com.project.pantrytracker.ui.theme.ProductsScreen
+import com.project.pantrytracker.viewmodels.CategoriesViewModel
+import com.project.pantrytracker.viewmodels.ProductEditViewModel
+import com.project.pantrytracker.viewmodels.ProductsViewModel
+import com.project.pantrytracker.viewmodels.StorageViewModel
 
-@Preview
 @Composable
 fun HomeScreen(
-    paddingValues: PaddingValues = PaddingValues(15.dp)
+    paddingValues        : PaddingValues,
+    userData             : UserData?,
+    viewModelStorage     : StorageViewModel,
+    viewModelProducts    : ProductsViewModel,
+    viewModelCategories  : CategoriesViewModel,
+    editProductsViewModel: ProductEditViewModel
 ) {
-    Box(
-        modifier = Modifier
-            .padding(paddingValues)
+    var storageSelected by remember { mutableStateOf(Storage()) }
+
+    val navController = rememberNavController()
+    val navBackStackEntry by navController.currentBackStackEntryAsState()
+
+    //LaunchedEffect(navBackStackEntry?.destination?.route) {
+    //    when (navBackStackEntry?.destination?.route) {
+    //        "list_products", "filter_products" -> viewModelCategories.updateCategorySelected(Categories())
+    //    }
+    //}
+
+    Surface (
+        color = MaterialTheme.colorScheme.surface
     ) {
-        LazyColumn(
+        Column (
+            verticalArrangement = Arrangement.spacedBy(10.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
             modifier = Modifier
                 .fillMaxSize()
-                .border(
-                    width = 3.dp,
-                    shape = RoundedCornerShape(
-                        topStart = 35.dp,
-                        topEnd = 35.dp
-                    ),
-                    color = Color.Black
-                )
+                .padding(paddingValues)
         ) {
-            item(
-                key = 0
+
+            /*
+
+            TopAppBar(
+                titleText = when(navBackStackEntry?.destination?.route) {
+                    "list_products" -> "Products"
+                    "filter_products", "select_categories" -> "Categories"
+                    "show_info_item" -> "Edit"
+                    else -> ""
+                },
+                subTitleText = when(navBackStackEntry?.destination?.route) {
+                    "list_products" -> "List of your products"
+                    "filter_products", "select_categories" -> "List of your categories"
+                    "show_info_item" -> "Form to edit the product"
+                    else -> ""
+                }
             ) {
-                Text(
-                    text = "Welcome to your inventory!",
-                    fontWeight = FontWeight.Bold,
-                    style = MaterialTheme.typography.headlineSmall,
-                    modifier = Modifier
-                        .padding(
-                            top = 20.dp,
-                            bottom = 10.dp,
-                            start = 20.dp
-                        )
-                )
+                IconButton(
+                    onClick = {
+                        when (navBackStackEntry?.destination?.route) {
+                            "filter_products" -> {
+                                navController.navigate("list_products") {
+                                    popUpTo("filter_products") { inclusive = true }
+                                }
+                            }
 
-                MosaicItemsInfo()
+                            "list_products" -> {
+                                navController.navigate("filter_products") {
+                                    popUpTo("list_products") { inclusive = true }
+                                }
+                            }
+
+                            "show_info_item" -> {
+                                viewModelProducts.addProduct(
+                                    product = Product(
+                                        barcode = editProductsViewModel.barcodeText,
+                                        name = editProductsViewModel.nameText,
+                                        quantity = editProductsViewModel.quantityText,
+                                        brands = if (editProductsViewModel.brandsText.contains(",")) editProductsViewModel.brandsText.split(",") else listOf(
+                                            editProductsViewModel.brandsText
+                                        ),
+                                        category = viewModelCategories.categoriesSelected.id,
+                                        numberOfProducts = editProductsViewModel.numberOfProductsText
+                                    ),
+                                    user = userData,
+                                    nameStorage =
+                                )
+
+                                editProductsViewModel.setProduct(Product())
+                                viewModelCategories.updateCategorySelected(Categories())
+
+                                navController.navigate("list_products") {
+                                    popUpTo("show_info_item") { inclusive = true }
+                                }
+                            }
+                        }
+                    }
+                ) {
+                    Icon(
+                        imageVector = when (navBackStackEntry?.destination?.route) {
+                            "show_info_item" -> Icons.Filled.CloudUpload
+
+                            "list_products" -> Icons.Outlined.FilterList
+
+                            "filter_products" -> Icons.Filled.FilterList
+
+                            else -> { Icons.Filled.FilterList }
+                        },
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.onPrimaryContainer
+                    )
+                }
             }
+
+            */
+
+            NavHost(
+                navController = navController,
+                startDestination = "panoramic_menu"
+            ) {
+
+                composable(
+                    route = "panoramic_menu"
+
+                ) {
+
+                    PanoramicInfo(
+                        viewModelStorage = viewModelStorage,
+                        viewModelProducts = viewModelProducts,
+                        viewModelCategories = viewModelCategories,
+                        navController = navController,
+                        changeStorageSelected = {
+                            storageSelected = it
+                        },
+                        userData = userData
+                    )
+
+                }
+
+                composable(
+                    route = "items_menu"
+                ) {
+                    ProductsScreen(
+                        viewModelProducts = viewModelProducts,
+                        viewModelCategories = viewModelCategories,
+                        editProductsViewModel = editProductsViewModel,
+                        navController = navController,
+                        userData = userData,
+                        storageSelected = storageSelected
+                    )
+                }
+
+            }
+
+            /*
+
+            NavHost(
+                navController = navController,
+                startDestination = "list_products"
+            ) {
+
+                //TODO(Deprecated)
+                composable(
+                    route = "list_products"
+                ) {
+
+                    Crossfade(
+                        targetState = viewModelProducts.isLoading,
+                        label = "crossfade"
+
+                    ) { loading ->
+
+                        if (loading) {
+
+                            // Mostra l'animazione di caricamento
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxSize()
+                                    .padding(paddingValues),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                CircularProgressIndicator(
+                                    color = MaterialTheme.colorScheme.onPrimaryContainer
+                                )
+                            }
+                        } else {
+
+
+
+                            ListProducts(
+                                viewModelProducts = viewModelProducts,
+                                viewModelCategories = viewModelCategories,
+                                editProductsViewModel = editProductsViewModel,
+                                navController = navController,
+                                userData = userData
+                            )
+                        }
+                    }
+                }
+
+                composable(
+                    route = "filter_products"
+                ) {
+                    Crossfade(targetState = viewModelCategories.isLoading, label = "crossfade") { loading ->
+                        if (loading) {
+                            // Mostra l'animazione di caricamento
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxSize()
+                                    .padding(paddingValues),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                CircularProgressIndicator(
+                                    color = MaterialTheme.colorScheme.onPrimaryContainer
+                                )
+                            }
+                        } else {
+                            SelectCategories(
+                                categoriesViewModel = viewModelCategories,
+                                filterMode = true
+                            )
+                        }
+                    }
+                }
+
+                composable(
+                    route = "select_categories"
+                ) {
+                    SelectCategories(
+                        categoriesViewModel = viewModelCategories
+                    )
+                }
+
+                composable(
+                    route = "show_info_item"
+                ) {
+                    EditProductScan(
+                        editProductsViewModel = editProductsViewModel,
+                        categoriesViewModel = viewModelCategories,
+                        navController = navController,
+                    )
+                }
+            }
+
+            */
         }
     }
-}
 
-@Composable
-fun MosaicItemsInfo() {
-    val testInfo = listOf(
-        InfoProductsHome(
-            valueShow = 5,
-            labelText = "Low Stock Alerts"
-        ),
-
-        InfoProductsHome(
-            valueShow = 16,
-            labelText = "Expired Item List"
-        ),
-
-        InfoProductsHome(
-            valueShow = 1,
-            labelText = "New Products Added"
-        ),
-
-        InfoProductsHome(
-            valueShow = 5,
-            labelText = "Many Stock Products"
-        )
-    )
-
-    Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(10.dp),
-        verticalArrangement = Arrangement.spacedBy(5.dp)
-    ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(5.dp)
-        ) {
-            for (index in 0 .. 1) {
-                MosaicItem(
-                    modifier = if (index %2 == 0) Modifier.size(150.dp) else Modifier
-                        .fillMaxWidth()
-                        .size(150.dp),
-                    infoProductsHome = testInfo[index]
-                )
-            }
-        }
-
-        Row(
-            modifier = Modifier
-                .fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(5.dp)
-        ) {
-            for (index in 2..< testInfo.size) {
-                MosaicItem(
-                    modifier = if (index %2 == 0)
-                        Modifier
-                            .fillMaxWidth(0.58f)
-                            .size(150.dp)
-                    else Modifier
-                        .size(150.dp)
-                        .weight(1f),
-                    infoProductsHome = testInfo[index]
-                )
-            }
-        }
-    }
-}
-
-@Composable
-private fun MosaicItem(
-    modifier: Modifier,
-    infoProductsHome: InfoProductsHome
-) {
-    Box(
-        modifier = modifier
-            .border(
-                width = 5.dp,
-                shape = RoundedCornerShape(
-                    size = 25.dp
-                ),
-                color = Color.Black
-            )
-    ) {
-        Column(
-            horizontalAlignment = Alignment.Start,
-            verticalArrangement = Arrangement.Center,
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(20.dp)
-        ) {
-            Text(
-                text = infoProductsHome.valueShow.toString(),
-                fontWeight = FontWeight.Bold,
-                style = MaterialTheme.typography.displayMedium
-            )
-
-            Text(
-                text = infoProductsHome.labelText
-            )
-        }
-    }
 }

@@ -29,6 +29,7 @@ android {
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
             )
+            signingConfig = signingConfigs.getByName("debug")
         }
     }
     compileOptions {
@@ -60,9 +61,12 @@ dependencies {
     implementation(libs.androidx.ui)
     implementation(libs.androidx.ui.graphics)
     implementation(libs.androidx.ui.tooling.preview)
-    implementation(libs.androidx.material3)
     implementation(libs.androidx.navigation.compose)
     implementation(libs.firebase.database.ktx)
+    implementation(libs.androidx.material3.android)
+    implementation(libs.firebase.database)
+    implementation(libs.androidx.core.animation)
+    implementation(libs.androidx.compose.testing)
 
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
@@ -73,7 +77,7 @@ dependencies {
     debugImplementation(libs.androidx.ui.test.manifest)
 
     implementation(platform(libs.firebase.bom))
-    implementation("com.google.firebase:firebase-analytics")
+    implementation(libs.firebase.analytics)
     implementation(libs.play.services.auth)
     implementation(libs.firebase.auth) //ALERT
     implementation(libs.coil.kt.coil.compose)
@@ -97,5 +101,4 @@ dependencies {
     //More icons
     implementation(libs.androidx.material.icons.extended)
 
-    implementation("androidx.compose.material3:material3-window-size-class:1.2.1")
 }

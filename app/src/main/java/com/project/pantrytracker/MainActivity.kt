@@ -1,13 +1,13 @@
 package com.project.pantrytracker
 
+import android.app.Activity
 import android.os.Bundle
-import android.widget.Toast
+import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
 import androidx.activity.result.IntentSenderRequest
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.material3.windowsizeclass.ExperimentalMaterial3WindowSizeClassApi
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -18,12 +18,13 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.google.accompanist.permissions.ExperimentalPermissionsApi
 import com.google.android.gms.auth.api.identity.Identity
+import com.google.android.gms.common.api.ApiException
 import com.project.pantrytracker.Firebase.LoginGoogle.GoogleAuthUiClient
 import com.project.pantrytracker.Firebase.LoginGoogle.SignInViewModel
-import com.project.pantrytracker.Firebase.createUserDb
 import com.project.pantrytracker.ui.MenuScreen
 import com.project.pantrytracker.ui.SignInScreen
 import com.project.pantrytracker.ui.theme.PantryTrackerTheme
+import com.project.pantrytracker.viewmodels.UserViewModel
 import kotlinx.coroutines.launch
 
 @ExperimentalPermissionsApi
@@ -36,23 +37,31 @@ class MainActivity : ComponentActivity() {
         )
     }
 
-    @OptIn(ExperimentalMaterial3WindowSizeClassApi::class)
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
         setContent {
             PantryTrackerTheme {
-                val navController = rememberNavController()
+                val navController     = rememberNavController()
 
-                NavHost(navController = navController, startDestination = "sign_in") {
-                    composable("sign_in") {
+                val viewModelUser = viewModel<UserViewModel>()
+
+                NavHost(
+                    navController = navController,
+                    startDestination = "sign_in"
+                ) {
+
+                    composable(
+                        route= "sign_in"
+                    ) {
                         val viewModel = viewModel<SignInViewModel>()
                         val state by viewModel.state.collectAsState()
 
                         LaunchedEffect(key1 = Unit) {
                             if(googleAuthUiClient.getSignedInUser() != null) {
-
-                                navController.navigate("profile")
+                                navController.navigate("profile") {
+                                    popUpTo("sign_in") { inclusive = true }
+                                }
                             }
                         }
 
@@ -60,10 +69,19 @@ class MainActivity : ComponentActivity() {
                             contract = ActivityResultContracts.StartIntentSenderForResult(),
                             onResult = { result ->
                                 lifecycleScope.launch {
-                                    val signInResult = googleAuthUiClient.signInWithIntent(
-                                        intent = result.data ?: return@launch
-                                    )
-                                    viewModel.onSignInResult(signInResult)
+                                    if (result.resultCode == Activity.RESULT_CANCELED) {
+                                        Log.e("GoogleSignIn", "Sign-in canceled by user")
+                                        return@launch
+                                    }
+
+                                    val intent = result.data ?: return@launch
+
+                                    try {
+                                        val signInResult = googleAuthUiClient.signInWithIntent(intent)
+                                        viewModel.onSignInResult(signInResult)
+                                    } catch (e: ApiException) {
+                                        Log.e("GoogleSignIn", "Sign-in failed: ${e.message}")
+                                    }
                                 }
                             }
                         )
@@ -72,16 +90,11 @@ class MainActivity : ComponentActivity() {
                             key1 = state.isSignInSuccessful
                         ) {
                             if (state.isSignInSuccessful) {
-                                Toast.makeText(
-                                    applicationContext,
-                                    "Sign in successful",
-                                    Toast.LENGTH_LONG
-                                ).show()
+                                viewModelUser.createUser(googleAuthUiClient.getSignedInUser())
 
-                                //test
-                                createUserDb(googleAuthUiClient.getSignedInUser())
-
-                                navController.navigate("profile")
+                                navController.navigate("profile") {
+                                    popUpTo("sign_in") { inclusive = true }
+                                }
                                 viewModel.resetState()
                             }
                         }
@@ -105,15 +118,16 @@ class MainActivity : ComponentActivity() {
                         LaunchedEffect(key1 = Unit) {
                             if(googleAuthUiClient.getSignedInUser() == null) {
 
-                                navController.navigate("sign_in")
+                                navController.navigate("sign_in") {
+                                    popUpTo("profile") { inclusive = true }
+                                }
                             }
                         }
 
                         //Menù dell'app con l'aggiunta della UI per il tablet
                         MenuScreen(
                             userData = googleAuthUiClient.getSignedInUser(),
-                            signOut = { googleAuthUiClient.signOut() },
-                            activity = this@MainActivity
+                            signOut = { googleAuthUiClient.signOut() }
                         )
                     }
                 }
